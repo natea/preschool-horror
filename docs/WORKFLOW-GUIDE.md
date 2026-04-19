@@ -331,7 +331,7 @@ You can also design a specific system directly:
 **The 8 required GDD sections:**
 
 | # | Section | What Goes Here |
-|---|---------|---------------|
+| --- | --- | --- |
 | 1 | **Overview** | One-paragraph summary of the system |
 | 2 | **Player Fantasy** | What the player imagines/feels when using this system |
 | 3 | **Detailed Rules** | Unambiguous mechanical rules |
@@ -1060,7 +1060,7 @@ Generates a comprehensive pre-release checklist covering:
 Complete cross-department validation:
 
 | Department | What Is Checked |
-|-----------|---------------|
+| --- | --- |
 | **Engineering** | Build stability, crash rates, memory leaks, load times |
 | **Design** | Feature completeness, tutorial flow, difficulty curve |
 | **Art** | Asset quality, missing textures, LOD levels |
@@ -1147,10 +1147,10 @@ These topics apply across all phases.
 Director gates are specialist agents that review your work at key workflow steps.
 By default they run at every checkpoint. You can control how much review you get.
 
-**Set your review intensity once during `/start`.** Saved to `production/review-mode.txt`.
+**Set your review intensity once during ****`/start`****.** Saved to `production/review-mode.txt`.
 
 | Mode | What runs | Best for |
-|------|-----------|----------|
+| --- | --- | --- |
 | `full` | All director gates at every step | New projects, learning the system |
 | `lean` | Directors only at phase transitions (`/gate-check`) | Experienced devs |
 | `solo` | No director reviews | Game jams, prototypes, maximum speed |
@@ -1232,7 +1232,7 @@ Tier 3 (Specialists):  gameplay-programmer, engine-programmer,
 The system has 12 hooks that run automatically:
 
 | Hook | Trigger | What It Does |
-|------|---------|-------------|
+| --- | --- | --- |
 | `session-start.sh` | Session start | Shows branch, recent commits, detects active.md for recovery |
 | `detect-gaps.sh` | Session start | Detects fresh projects (no engine, no concept) and suggests `/start` |
 | `pre-compact.sh` | Before compaction | Dumps session state into conversation for auto-recovery |
@@ -1335,7 +1335,7 @@ Reads existing code and generates GDD-format design documentation from it.
 ### "I need to do X -- which agent do I use?"
 
 | I need to... | Agent | Tier |
-|-------------|-------|------|
+| --- | --- | --- |
 | Come up with a game idea | `/brainstorm` skill | -- |
 | Design a game mechanic | `game-designer` | 2 |
 | Design specific formulas/numbers | `systems-designer` | 3 |
@@ -1415,7 +1415,7 @@ conflicts go to `producer`.
 #### Onboarding and Navigation (5)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/start` | Guided onboarding, routes to right workflow | Any (first session) |
 | `/help` | Context-aware "what do I do next?" | Any |
 | `/project-stage-detect` | Full project audit to determine current phase | Any |
@@ -1425,7 +1425,7 @@ conflicts go to `producer`.
 #### Game Design (6)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/brainstorm` | Collaborative ideation with MDA analysis | 1 |
 | `/map-systems` | Decompose concept into systems index | 1-2 |
 | `/design-system` | Guided section-by-section GDD authoring | 2 |
@@ -1436,14 +1436,14 @@ conflicts go to `producer`.
 #### UX and Interface (2)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/ux-design` | Author UX specs (screen/flow, HUD, patterns) | 4 |
 | `/ux-review` | Validate UX specs for accessibility and GDD alignment | 4 |
 
 #### Architecture (4)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/create-architecture` | Master architecture document | 3 |
 | `/architecture-decision` | Create or retrofit an ADR | 3 |
 | `/architecture-review` | Validate all ADRs, dependency ordering | 3 |
@@ -1452,7 +1452,7 @@ conflicts go to `producer`.
 #### Stories and Sprints (8)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/create-epics` | Translate GDDs + ADRs into epics (one per module) | 4 |
 | `/create-stories` | Break a single epic into story files | 4 |
 | `/dev-story` | Implement a story — routes to the correct programmer agent | 5 |
@@ -1465,7 +1465,7 @@ conflicts go to `producer`.
 #### Reviews and Analysis (10)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/design-review` | Validate GDD against 8-section standard | 1-2 |
 | `/code-review` | Architectural code review | 5+ |
 | `/balance-check` | Game balance formula analysis | 5-6 |
@@ -1480,7 +1480,7 @@ conflicts go to `producer`.
 #### QA and Testing (9)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/qa-plan` | Generate QA test plan for a sprint or feature | 5 |
 | `/smoke-check` | Critical path smoke test gate before QA hand-off | 5-6 |
 | `/soak-test` | Soak test protocol for extended play sessions | 6 |
@@ -1494,7 +1494,7 @@ conflicts go to `producer`.
 #### Production Management (6)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/milestone-review` | Milestone progress and go/no-go | 5 |
 | `/retrospective` | Sprint retrospective analysis | 5 |
 | `/bug-report` | Structured bug report creation | 5+ |
@@ -1505,7 +1505,7 @@ conflicts go to `producer`.
 #### Release (5)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/release-checklist` | Pre-release validation | 7 |
 | `/launch-checklist` | Full cross-department launch readiness | 7 |
 | `/changelog` | Auto-generate internal changelog | 7 |
@@ -1515,14 +1515,14 @@ conflicts go to `producer`.
 #### Creative (2)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/prototype` | Throwaway prototype in isolated worktree | 4 |
 | `/localize` | String extraction and validation | 6-7 |
 
 #### Team Orchestration (9)
 
 | Command | Purpose | Phase |
-|---------|---------|-------|
+| --- | --- | --- |
 | `/team-combat` | Combat feature: design through implementation | 5 |
 | `/team-narrative` | Narrative content: structure through dialogue | 5 |
 | `/team-ui` | UI feature: UX spec through polished implementation | 5 |
@@ -1660,10 +1660,10 @@ conflicts go to `producer`.
 6. **Run /help when uncertain.** It reads your actual project state and tells
    you the single most important next step.
 
-7. **Run `/design-review` before handing designs to programmers.** This
+7. **Run ****`/design-review`**** before handing designs to programmers.** This
    catches incomplete specs early, saving rework.
 
-8. **Run `/code-review` after every major feature.** Catch architectural
+8. **Run ****`/code-review`**** after every major feature.** Catch architectural
    issues before they propagate.
 
 9. **Prototype risky mechanics first.** A day of prototyping can save a week

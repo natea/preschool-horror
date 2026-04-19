@@ -37,7 +37,7 @@
 #   Each entry: name, status, source, referenced_by[], attributes{}, added, revised
 
 version: 1
-last_updated: ""
+last_updated: "2026-04-12"
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -106,7 +106,180 @@ items: []
 #   output_range[min, max], added
 # Optional: expression (the actual formula), notes
 
-formulas: []
+formulas:
+  - name: night_timer
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+      - design/gdd/hud-ui-system.md
+    variables:
+      - BASE_DURATION
+      - DURATION_DECREMENT
+      - n
+    output_range: [420, 600]
+    expression: "BASE_DURATION - (n - 1) * DURATION_DECREMENT"
+    notes: "Night duration in seconds. Night 1 = 600s, Night 7 = 420s. Linear
+      decrease. Feeds into HUD timer display and grace period trigger."
+    added: 2026-04-11
+    revised: ""
+
+  - name: anomaly_target
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+      - design/gdd/anomaly-placement-engine.md
+    variables:
+      - ANOMALY_BASE
+      - ANOMALY_SCALE
+      - n
+    output_range: [3, 12]
+    expression: "ANOMALY_BASE + floor(ANOMALY_SCALE * (n - 1))"
+    notes: "Total anomaly count per night. Clamped at total available spawn
+      slots. Output feeds into Anomaly Placement Engine."
+    added: 2026-04-11
+    revised: ""
+
+  - name: monster_count
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+      - design/gdd/anomaly-placement-engine.md
+    variables:
+      - MONSTER_BASE
+      - MONSTER_SCALE
+      - n
+    output_range: [0, 3]
+    expression: "0 if n<3, MONSTER_BASE if n==3, MONSTER_BASE + floor(MONSTER_SCALE * (n-3)) if n>3"
+    notes: "Active monster count per night. Nights 1-2 = 0, Night 3 = 1,
+      Night 7 = 3. Output feeds into Monster AI."
+    added: 2026-04-11
+    revised: ""
+
+  - name: room_anomaly_allocation
+    status: active
+    source: design/gdd/anomaly-placement-engine.md
+    referenced_by:
+      - design/gdd/anomaly-placement-engine.md
+    variables:
+      - active_spawn_slots
+      - hotspot_modifier
+      - monster_cap_modifier
+      - anomaly_target_env
+    output_range: [0, 8]
+    expression: "floor(T_env * (S * H * M) / total_weight), remainder by fractional part"
+    notes: "Per-room environmental anomaly count. Template Mode only — Fixed Mode
+      uses hand-authored counts. Output clamped to active_spawn_slots."
+    added: 2026-04-11
+    revised: ""
+
+  - name: severity_tier_allocation
+    status: active
+    source: design/gdd/anomaly-placement-engine.md
+    referenced_by:
+      - design/gdd/anomaly-placement-engine.md
+    variables:
+      - anomaly_target
+      - monster_count
+      - PCT_T3
+      - PCT_T2
+    output_range: [0, 12]
+    expression: "t3_raw=floor(AT*PCT_T3), t3_env=max(0,t3_raw-MC), t2_env=floor(AT*PCT_T2), t1_env=AT-MC-t3_env-t2_env"
+    notes: "Global severity tier counts per night. Monsters consume Tier 3 budget
+      first. t1_env absorbs rounding remainder. Guard: clamp t1_env >= 0."
+    added: 2026-04-11
+    revised: ""
+
+  - name: footstep_rate
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+    variables:
+      - STEP_STRIDE_LENGTH
+      - current_speed
+    output_range: [0.2, "inf"]
+    expression: "STEP_STRIDE_LENGTH / current_speed"
+    notes: "Controls footstep audio pacing. Walk: 0.4s, Camera Raised: 0.53s,
+      Run: 0.2s. Division guarded at speed 0 (no footstep fires)."
+    added: 2026-04-10
+    revised: ""
+
+  - name: active_spawn_slots
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+      - design/gdd/anomaly-placement-engine.md
+    variables:
+      - base_spawn_slots
+      - tier_multiplier
+    output_range: [0, 8]
+    expression: "floor(base_spawn_slots(R) * tier_multiplier(N))"
+    notes: "Controls anomaly density per room per night. Output feeds into
+      Anomaly Placement Engine. Zero is a valid output (no anomalies in that
+      room that night)."
+    added: 2026-04-09
+    revised: ""
+
+  - name: debrief_dwell_time
+    status: active
+    source: design/gdd/hud-ui-system.md
+    referenced_by:
+      - design/gdd/hud-ui-system.md
+      - design/gdd/evidence-submission.md
+    variables:
+      - T_fade_per_line
+      - N_lines
+      - T_pause_pre_grade
+      - T_post_grade
+      - T_post_pay
+      - T_post_directive
+    output_range: [1.7, 3.7]
+    expression: "(T_fade_per_line * N_lines) + T_pause_pre_grade + T_post_grade + T_post_pay + T_post_directive"
+    notes: "Minimum time before Continue Prompt appears in Boss Debrief.
+      Evidence Submission must wait for T_dwell before allowing player input.
+      Typical at N_lines=3: ~2.3s."
+    added: 2026-04-11
+    revised: ""
+
+  - name: photo_score
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+      - design/gdd/photography-system.md
+    variables:
+      - photo_score_base
+      - in_frame_ratio
+      - facing_score
+      - distance_score
+    output_range: [0.0, 1.0]
+    expression: "photo_score_base * in_frame_ratio * facing_score * distance_score"
+    notes: "Composite photo quality score per anomaly. Photography System consumes
+      this to grade photos. Evidence Submission uses the grade. Threshold for
+      detection: PHOTO_SCORE_THRESHOLD (0.15)."
+    added: 2026-04-12
+    revised: ""
+
+  - name: night_evidence_score
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+      - design/gdd/evidence-submission.md
+    variables:
+      - unique_best_scores
+      - total_anomalies_this_night
+    output_range: [0.0, 1.0]
+    expression: "sum(unique_best_scores) / max(1, total_anomalies_this_night)"
+    notes: "Aggregate evidence quality for the night. Evidence Submission consumes
+      this to determine boss grade, tone, and pay. Divides by total anomalies
+      (not just photographed) — rewards comprehensive coverage."
+    added: 2026-04-12
+    revised: ""
 
 # Example:
 #
@@ -139,7 +312,631 @@ formulas: []
 #
 # Required fields: name, status, source, referenced_by, value, unit, added
 
-constants: []
+constants:
+  - name: player_walk_speed
+    status: active
+    source: design/gdd/first-person-controller.md
+    referenced_by:
+      - design/gdd/first-person-controller.md
+      - design/gdd/room-level-management.md
+      - design/gdd/audio-system.md
+    value: 2.0
+    unit: m/s
+    added: 2026-04-09
+    revised: ""
+
+  - name: player_run_speed
+    status: active
+    source: design/gdd/first-person-controller.md
+    referenced_by:
+      - design/gdd/first-person-controller.md
+      - design/gdd/audio-system.md
+    value: 4.0
+    unit: m/s
+    added: 2026-04-09
+    revised: ""
+
+  - name: player_capsule_height
+    status: active
+    source: design/gdd/first-person-controller.md
+    referenced_by:
+      - design/gdd/first-person-controller.md
+      - design/gdd/room-level-management.md
+    value: 1.75
+    unit: m
+    added: 2026-04-09
+    revised: ""
+
+  - name: speed_modifier_camera
+    status: active
+    source: design/gdd/first-person-controller.md
+    referenced_by:
+      - design/gdd/first-person-controller.md
+      - design/gdd/audio-system.md
+      - design/gdd/hud-ui-system.md
+      - design/gdd/photography-system.md
+    value: 0.75
+    unit: fraction
+    added: 2026-04-11
+    revised: ""
+
+  - name: interact_ray_length
+    status: active
+    source: design/gdd/first-person-controller.md
+    referenced_by:
+      - design/gdd/first-person-controller.md
+    value: 2.0
+    unit: m
+    added: 2026-04-09
+    revised: ""
+
+  - name: stationary_debounce
+    status: active
+    source: design/gdd/first-person-controller.md
+    referenced_by:
+      - design/gdd/first-person-controller.md
+    value: 0.5
+    unit: s
+    added: 2026-04-09
+    revised: ""
+
+  - name: horror_tier_1_multiplier
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+      - design/gdd/audio-system.md
+    value: 0.25
+    unit: fraction
+    added: 2026-04-09
+    revised: ""
+
+  - name: horror_tier_2_multiplier
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+      - design/gdd/audio-system.md
+    value: 0.50
+    unit: fraction
+    added: 2026-04-09
+    revised: ""
+
+  - name: horror_tier_3_multiplier
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+      - design/gdd/audio-system.md
+    value: 1.00
+    unit: fraction
+    added: 2026-04-09
+    revised: ""
+
+  - name: preschool_footprint
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+    value: "20x15"
+    unit: m
+    added: 2026-04-09
+    revised: ""
+
+  - name: room_count_total
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+      - design/gdd/night-progression.md
+      - design/gdd/anomaly-placement-engine.md
+    value: 7
+    unit: rooms
+    added: 2026-04-09
+    revised: ""
+
+  - name: room_count_mvp
+    status: active
+    source: design/gdd/room-level-management.md
+    referenced_by:
+      - design/gdd/room-level-management.md
+      - design/gdd/anomaly-placement-engine.md
+    value: 3
+    unit: rooms
+    added: 2026-04-09
+    revised: ""
+
+  - name: step_stride_length
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+    value: 0.8
+    unit: m
+    added: 2026-04-10
+    revised: ""
+
+  - name: sfx_pool_2d_size
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+    value: 6
+    unit: nodes
+    added: 2026-04-10
+    revised: ""
+
+  - name: sfx_pool_3d_size
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+    value: 8
+    unit: nodes
+    added: 2026-04-10
+    revised: ""
+
+  - name: max_spatial_distance
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+    value: 15.0
+    unit: m
+    added: 2026-04-10
+    revised: ""
+
+  - name: monster_breathing_threshold
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+      - design/gdd/anomaly-system.md
+    value: 8.0
+    unit: m
+    added: 2026-04-10
+    revised: ""
+
+  - name: audio_budget_total
+    status: active
+    source: design/gdd/audio-system.md
+    referenced_by:
+      - design/gdd/audio-system.md
+    value: 20
+    unit: MB
+    added: 2026-04-10
+    revised: ""
+
+  - name: night_count
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+      - design/gdd/hud-ui-system.md
+    value: 7
+    unit: nights
+    added: 2026-04-11
+    revised: ""
+
+  - name: night_timer_base
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+    value: 600
+    unit: s
+    added: 2026-04-11
+    revised: ""
+
+  - name: night_timer_decrement
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+    value: 30
+    unit: s
+    added: 2026-04-11
+    revised: ""
+
+  - name: anomaly_base
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+    value: 3
+    unit: count
+    added: 2026-04-11
+    revised: ""
+
+  - name: anomaly_scale
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+    value: 1.5
+    unit: per_night
+    added: 2026-04-11
+    revised: ""
+
+  - name: monster_base
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+    value: 1
+    unit: count
+    added: 2026-04-11
+    revised: ""
+
+  - name: monster_scale
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+    value: 0.5
+    unit: per_night
+    added: 2026-04-11
+    revised: ""
+
+  - name: consecutive_nights_threshold
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+      - design/gdd/evidence-submission.md
+    value: 3
+    unit: nights
+    added: 2026-04-11
+    revised: ""
+
+  - name: timer_grace_seconds
+    status: active
+    source: design/gdd/night-progression.md
+    referenced_by:
+      - design/gdd/night-progression.md
+      - design/gdd/hud-ui-system.md
+    value: 30
+    unit: s
+    added: 2026-04-11
+    revised: ""
+
+  - name: hotspot_modifier
+    status: active
+    source: design/gdd/anomaly-placement-engine.md
+    referenced_by:
+      - design/gdd/anomaly-placement-engine.md
+    value: 1.75
+    unit: multiplier
+    added: 2026-04-11
+    revised: ""
+
+  - name: monster_cap_modifier
+    status: active
+    source: design/gdd/anomaly-placement-engine.md
+    referenced_by:
+      - design/gdd/anomaly-placement-engine.md
+    value: 0.75
+    unit: multiplier
+    added: 2026-04-11
+    revised: ""
+
+  - name: entry_hall_cap_table
+    status: active
+    source: design/gdd/anomaly-placement-engine.md
+    referenced_by:
+      - design/gdd/anomaly-placement-engine.md
+    value: "[1,1,1,2,2,2,3]"
+    unit: per_night_cap
+    added: 2026-04-11
+    revised: ""
+
+  - name: min_density_night
+    status: active
+    source: design/gdd/anomaly-placement-engine.md
+    referenced_by:
+      - design/gdd/anomaly-placement-engine.md
+    value: 3
+    unit: night
+    added: 2026-04-11
+    revised: ""
+
+  - name: warning_threshold
+    status: active
+    source: design/gdd/hud-ui-system.md
+    referenced_by:
+      - design/gdd/hud-ui-system.md
+    value: 60
+    unit: s
+    notes: "Timer switches to warning state at this value. Must be < shortest
+      night duration (420s). Night Progression timer values must exceed this."
+    added: 2026-04-11
+    revised: ""
+
+  - name: warning_pulse_hz
+    status: active
+    source: design/gdd/hud-ui-system.md
+    referenced_by:
+      - design/gdd/hud-ui-system.md
+    value: 0.5
+    unit: Hz
+    notes: "Shared heartbeat for all warning pulses (timer, film, flash charge).
+      Synchronized across registers. Audio System may reference for audio sync."
+    added: 2026-04-11
+    revised: ""
+
+  - name: film_count_stub
+    status: deprecated
+    source: design/gdd/hud-ui-system.md
+    referenced_by:
+      - design/gdd/hud-ui-system.md
+      - design/gdd/photography-system.md
+    value: 12
+    unit: count
+    notes: "DEPRECATED — replaced by film_table from photography-system.md.
+      Night 1-2 value (12) matches this stub. HUD now uses film_remaining_changed
+      signal from Photography System."
+    added: 2026-04-11
+    revised: "2026-04-12"
+
+  - name: photo_score_threshold
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+      - design/gdd/photography-system.md
+      - design/gdd/evidence-submission.md
+    value: 0.15
+    unit: score
+    notes: "Minimum composite photo_score for a photo to count as detected evidence.
+      Photography System and Evidence Submission must agree on this threshold."
+    added: 2026-04-12
+    revised: ""
+
+  - name: photo_facing_threshold_env
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+    value: 60
+    unit: degrees
+    notes: "Maximum angle from head-on for environmental anomaly photo scoring.
+      Beyond this angle, facing_score = 0."
+    added: 2026-04-12
+    revised: ""
+
+  - name: photo_facing_threshold_monster
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+    value: 45
+    unit: degrees
+    notes: "Maximum angle from head-on for monster photo scoring. Narrower than
+      environmental — monsters have a 'face' that matters."
+    added: 2026-04-12
+    revised: ""
+
+  - name: proximity_radius_t1
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+    value: 3.0
+    unit: m
+    notes: "Audio proximity trigger radius for Tier 1 (Subtle) anomalies.
+      Audio System uses this to start proximity cues."
+    added: 2026-04-12
+    revised: ""
+
+  - name: proximity_radius_t2
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+    value: 5.0
+    unit: m
+    notes: "Audio proximity trigger radius for Tier 2 (Unsettling) anomalies."
+    added: 2026-04-12
+    revised: ""
+
+  - name: proximity_radius_t3
+    status: active
+    source: design/gdd/anomaly-system.md
+    referenced_by:
+      - design/gdd/anomaly-system.md
+    value: 8.0
+    unit: m
+    notes: "Audio proximity trigger radius for Tier 3 (Confrontational/Monster)
+      anomalies. Fills the room — player knows before entering."
+    added: 2026-04-12
+    revised: ""
+
+  - name: fov_base
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: 70
+    unit: degrees
+    notes: "Base camera FOV for photography viewfinder. Must match the player's
+      default Camera3D FOV in FPC. Zoom levels divide this value."
+    added: 2026-04-12
+    revised: ""
+
+  - name: flash_recharge_time
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: 3.0
+    unit: s
+    notes: "Linear recharge from 0.0 to 1.0 after flash fires. During recharge,
+      photos can still be taken but without flash illumination."
+    added: 2026-04-12
+    revised: ""
+
+  - name: flash_range
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: 8.0
+    unit: m
+    notes: "OmniLight3D range for flash illumination. Must be >= PHOTO_MAX_DISTANCE_MONSTER
+      from Anomaly System or distant monsters won't be illuminated."
+    added: 2026-04-12
+    revised: ""
+
+  - name: flash_affect_radius
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: 10.0
+    unit: m
+    notes: "Maximum distance for flash_fired_at_monster signal to trigger monster
+      reactions. Should be >= flash_range — monsters react to partial illumination."
+    added: 2026-04-12
+    revised: ""
+
+  - name: film_table
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+      - design/gdd/hud-ui-system.md
+    value: "[12,12,10,10,8,8,6]"
+    unit: per_night_count
+    notes: "Per-night film budget. Replaces deprecated film_count_stub. Night 1-2
+      value matches old stub (12). Total across 7 nights: 66. Reset on night start
+      and death restart."
+    added: 2026-04-12
+    revised: ""
+
+  - name: lock_threshold
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: 0.30
+    unit: score
+    notes: "Minimum photo_score for the anomaly lock indicator to activate. Higher
+      than PHOTO_SCORE_THRESHOLD (0.15) to indicate 'good' framing feedback."
+    added: 2026-04-12
+    revised: ""
+
+  - name: photo_resolution
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: "480x270"
+    unit: pixels
+    notes: "SubViewport render resolution for photo captures. Quarter of 1080p.
+      Each photo ~0.5 MB uncompressed at this resolution."
+    added: 2026-04-12
+    revised: ""
+
+  - name: preview_duration
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+    value: 1.5
+    unit: s
+    notes: "How long photo preview shows before returning to live viewfinder.
+      Not interruptible — player must wait. Movement slowed to 1.5 m/s during."
+    added: 2026-04-12
+    revised: ""
+
+  - name: grade_thresholds
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+      - design/gdd/evidence-submission.md
+    value: "[0.80,0.60,0.40,0.20]"
+    unit: score
+    notes: "Per-photo grade thresholds: A>=0.80, B>=0.60, C>=0.40, D>=0.20, F<0.20.
+      Must remain in descending order. Evidence Submission consumes these grades."
+    added: 2026-04-12
+    revised: ""
+
+  - name: night_grade_thresholds
+    status: active
+    source: design/gdd/photography-system.md
+    referenced_by:
+      - design/gdd/photography-system.md
+      - design/gdd/evidence-submission.md
+    value: "[0.70,0.50,0.30,0.15]"
+    unit: score
+    notes: "Night evidence grade thresholds: A>=0.70, B>=0.50, C>=0.30, D>=0.15,
+      F<0.15. Applied to night_evidence_score. Evidence Submission uses night grade
+      to determine boss tone and pay."
+    added: 2026-04-12
+    revised: ""
+
+  - name: night_pay
+    status: active
+    source: design/gdd/evidence-submission.md
+    referenced_by:
+      - design/gdd/evidence-submission.md
+    variables:
+      - n
+      - G
+      - BASE_PAY_TABLE
+      - GRADE_MULTIPLIER
+    output_range: [0, 750]
+    expression: "floor(BASE_PAY_TABLE[n] * GRADE_MULTIPLIER[G])"
+    notes: "Pay awarded per night. n=night index (0-based into BASE_PAY_TABLE),
+      G=night grade letter (A-F). Zero photos → pay = $0 regardless of formula.
+      Night 7 (win path) has no grading or pay."
+    added: 2026-04-12
+    revised: ""
+
+  - name: boss_anger_update
+    status: active
+    source: design/gdd/evidence-submission.md
+    referenced_by:
+      - design/gdd/evidence-submission.md
+    variables:
+      - boss_anger_prev
+      - G
+      - n
+      - BASE_GRADE_DELTA
+      - NIGHT_PRESSURE_BONUS
+    output_range: [0, 10]
+    expression: "clamp(boss_anger_prev + BASE_GRADE_DELTA[G] + NIGHT_PRESSURE_BONUS[n], 0, 10)"
+    notes: "Boss anger is a 0–10 integer that drives dialogue tone bands:
+      CALM(0-2), IRRITATED(3-5), THREATENING(6-8), FURIOUS(9-10).
+      Initial value: 0. Updated once per night after grading."
+    added: 2026-04-12
+    revised: ""
+
+  - name: base_pay_table
+    status: active
+    source: design/gdd/evidence-submission.md
+    referenced_by:
+      - design/gdd/evidence-submission.md
+    value: "[200, 200, 350, 350, 600, 600]"
+    unit: dollars
+    notes: "Base pay per night (nights 1-6, 0-indexed). Grouped in pairs:
+      nights 1-2 = $200, nights 3-4 = $350, nights 5-6 = $600.
+      Multiplied by GRADE_MULTIPLIER to get final night_pay."
+    added: 2026-04-12
+    revised: ""
+
+  - name: boss_anger_initial
+    status: active
+    source: design/gdd/evidence-submission.md
+    referenced_by:
+      - design/gdd/evidence-submission.md
+    value: 0
+    unit: anger_score
+    notes: "Starting boss anger at beginning of a new game. Range 0-10.
+      Drives dialogue tone selection during Boss Debrief."
+    added: 2026-04-12
+    revised: ""
 
 # Example:
 #

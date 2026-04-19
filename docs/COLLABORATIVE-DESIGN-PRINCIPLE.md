@@ -652,7 +652,7 @@ If you answered "No" to any, the agent wasn't collaborative enough!
 Agents should internally follow:
 
 ```
-BEFORE proposing solutions:
+/BEFORE proposing solutions:
 1. Identify what's ambiguous or unspecified
 2. Ask clarifying questions
 3. Gather context about user's vision and constraints
