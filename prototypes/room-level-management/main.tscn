@@ -1,0 +1,288 @@
+[gd_scene load_steps=8 format=3 uid="uid://proto_room_mgmt"]
+
+[ext_resource type="Script" path="res://player.gd" id="1_player"]
+[ext_resource type="Script" path="res://debug_hud.gd" id="2_hud"]
+[ext_resource type="Script" path="res://preschool.gd" id="3_preschool"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_entry"]
+size = Vector3(6.0, 3.0, 5.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_classroom"]
+size = Vector3(8.0, 3.0, 6.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_artcorner"]
+size = Vector3(4.0, 3.0, 4.0)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.3
+height = 1.75
+
+[node name="Main" type="Node3D"]
+
+[node name="Preschool" type="Node3D" parent="."]
+script = ExtResource("3_preschool")
+
+;; === ENTRY HALL (6m x 5m) — leftmost room ===
+;; Center at (-7, 0, 0) so it connects to classroom via doorway
+
+[node name="EntryHall" type="Node3D" parent="Preschool"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 0)
+
+[node name="Floor" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+size = Vector3(6.0, 0.1, 5.0)
+material_override = null
+
+[node name="Ceiling" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0)
+size = Vector3(6.0, 0.1, 5.0)
+
+[node name="WallNorth" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -2.5)
+size = Vector3(6.0, 3.0, 0.15)
+
+[node name="WallSouth" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 2.5)
+size = Vector3(6.0, 3.0, 0.15)
+
+[node name="WallWest" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.0, 1.5, 0)
+size = Vector3(0.15, 3.0, 5.0)
+
+;; East wall has doorway to classroom — two segments with 1.2m gap
+[node name="WallEastTop" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 2.55, 0)
+size = Vector3(0.15, 0.9, 5.0)
+
+[node name="WallEastLeft" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 1.05, -1.85)
+size = Vector3(0.15, 2.1, 1.3)
+
+[node name="WallEastRight" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.0, 1.05, 1.85)
+size = Vector3(0.15, 2.1, 1.3)
+
+;; Entry Hall Area3D for boundary detection
+[node name="RoomArea" type="Area3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+collision_layer = 8
+collision_mask = 2
+
+[node name="Shape" type="CollisionShape3D" parent="Preschool/EntryHall/RoomArea"]
+shape = SubResource("BoxShape3D_entry")
+
+;; Entry Hall landmark: cubby shelf
+[node name="CubbyShelf" type="CSGBox3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.75, 0)
+size = Vector3(0.4, 1.5, 2.0)
+
+;; Entry Hall light
+[node name="Light" type="OmniLight3D" parent="Preschool/EntryHall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 1.5
+omni_range = 8.0
+
+;; === MAIN CLASSROOM (8m x 6m) — center room ===
+;; Center at (0, 0, 0)
+
+[node name="MainClassroom" type="Node3D" parent="Preschool"]
+
+[node name="Floor" type="CSGBox3D" parent="Preschool/MainClassroom"]
+size = Vector3(8.0, 0.1, 6.0)
+
+[node name="Ceiling" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0)
+size = Vector3(8.0, 0.1, 6.0)
+
+[node name="WallNorth" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -3.0)
+size = Vector3(8.0, 3.0, 0.15)
+
+;; South wall has doorway to Art Corner — gap centered at x=2
+[node name="WallSouthLeft" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 1.5, 3.0)
+size = Vector3(5.2, 3.0, 0.15)
+
+[node name="WallSouthRight" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 1.5, 3.0)
+size = Vector3(1.2, 3.0, 0.15)
+
+[node name="WallSouthDoorTop" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 2.55, 3.0)
+size = Vector3(1.2, 0.9, 0.15)
+
+;; West wall has doorway to Entry Hall — matches Entry Hall's east doorway
+[node name="WallWestTop" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, 2.55, 0)
+size = Vector3(0.15, 0.9, 6.0)
+
+[node name="WallWestLeft" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, 1.05, -2.1)
+size = Vector3(0.15, 2.1, 1.8)
+
+[node name="WallWestRight" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.0, 1.05, 2.1)
+size = Vector3(0.15, 2.1, 1.8)
+
+[node name="WallEast" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.0, 1.5, 0)
+size = Vector3(0.15, 3.0, 6.0)
+
+;; Main Classroom Area3D
+[node name="RoomArea" type="Area3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+collision_layer = 8
+collision_mask = 2
+
+[node name="Shape" type="CollisionShape3D" parent="Preschool/MainClassroom/RoomArea"]
+shape = SubResource("BoxShape3D_classroom")
+
+;; Classroom furniture: table + chairs
+[node name="Table" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+size = Vector3(1.5, 0.05, 1.0)
+
+[node name="TableLeg1" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.65, 0.16, -0.4)
+size = Vector3(0.05, 0.32, 0.05)
+
+[node name="TableLeg2" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 0.16, -0.4)
+size = Vector3(0.05, 0.32, 0.05)
+
+[node name="TableLeg3" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.65, 0.16, 0.4)
+size = Vector3(0.05, 0.32, 0.05)
+
+[node name="TableLeg4" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.65, 0.16, 0.4)
+size = Vector3(0.05, 0.32, 0.05)
+
+;; Small chairs (child-sized ~25cm seat height)
+[node name="Chair1" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4, 0.125, -0.8)
+size = Vector3(0.3, 0.25, 0.3)
+
+[node name="Chair2" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 0.125, -0.8)
+size = Vector3(0.3, 0.25, 0.3)
+
+;; Bulletin board on north wall
+[node name="BulletinBoard" type="CSGBox3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -2.85)
+size = Vector3(2.0, 1.0, 0.05)
+
+;; Classroom lights
+[node name="Light1" type="OmniLight3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 2.7, 0)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 1.5
+omni_range = 7.0
+
+[node name="Light2" type="OmniLight3D" parent="Preschool/MainClassroom"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 2.7, 0)
+light_color = Color(1, 0.95, 0.85, 1)
+light_energy = 1.5
+omni_range = 7.0
+
+;; === ART CORNER (4m x 4m) — south of classroom ===
+;; Center at (2, 0, 5) — offset east to connect via doorway
+
+[node name="ArtCorner" type="Node3D" parent="Preschool"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 5.0)
+
+[node name="Floor" type="CSGBox3D" parent="Preschool/ArtCorner"]
+size = Vector3(4.0, 0.1, 4.0)
+
+[node name="Ceiling" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0)
+size = Vector3(4.0, 0.1, 4.0)
+
+;; North wall — has doorway back to classroom
+[node name="WallNorthLeft" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.4, 1.5, -2.0)
+size = Vector3(1.2, 3.0, 0.15)
+
+[node name="WallNorthRight" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 1.5, -2.0)
+size = Vector3(1.2, 3.0, 0.15)
+
+[node name="WallNorthDoorTop" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.55, -2.0)
+size = Vector3(1.2, 0.9, 0.15)
+
+[node name="WallSouth" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 2.0)
+size = Vector3(4.0, 3.0, 0.15)
+
+[node name="WallWest" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.0, 1.5, 0)
+size = Vector3(0.15, 3.0, 4.0)
+
+[node name="WallEast" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.0, 1.5, 0)
+size = Vector3(0.15, 3.0, 4.0)
+
+;; Art Corner Area3D
+[node name="RoomArea" type="Area3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+collision_layer = 8
+collision_mask = 2
+
+[node name="Shape" type="CollisionShape3D" parent="Preschool/ArtCorner/RoomArea"]
+shape = SubResource("BoxShape3D_artcorner")
+
+;; Easel (landmark)
+[node name="Easel" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0.5)
+size = Vector3(0.6, 0.8, 0.05)
+
+[node name="EaselLeg" type="CSGBox3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0.6)
+size = Vector3(0.05, 0.6, 0.3)
+
+;; Art Corner light — table lamp style, dimmer
+[node name="Light" type="OmniLight3D" parent="Preschool/ArtCorner"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
+light_color = Color(1, 0.9, 0.75, 1)
+light_energy = 1.0
+omni_range = 5.0
+
+;; === PLAYER ===
+;; Start in Entry Hall
+
+[node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.95, 0)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Camera3D" type="Camera3D" parent="Player"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+
+;; === DEBUG HUD ===
+
+[node name="DebugHUD" type="CanvasLayer" parent="."]
+script = ExtResource("2_hud")
+
+[node name="Label" type="Label" parent="DebugHUD"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 500.0
+offset_bottom = 250.0
+theme_override_colors/font_color = Color(0.5, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 16
+mouse_filter = 2
+
+;; === ENVIRONMENT ===
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.25, 0.433, 0, 0.866, 0.5, -0.5, -0.433, 0.75, 0, 10, 0)
+light_energy = 0.3
+shadow_enabled = true

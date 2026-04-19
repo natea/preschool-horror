@@ -1,0 +1,13 @@
+version = 1
+graph = "game-dev-pipeline.fabro"
+goal = "Take Show & Tell from current state through remaining phases to a shipped game"
+
+[sandbox]
+provider = "local"
+
+[sandbox.local]
+worktree_mode = "clean"
+
+[sandbox.env]
+GODOT_VERSION = "4.6"
+GAME_NAME = "Show & Tell"

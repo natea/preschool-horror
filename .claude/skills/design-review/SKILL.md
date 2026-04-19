@@ -71,7 +71,7 @@ Evaluate against the Design Document Standard checklist:
 **This phase is MANDATORY in full mode.** Do not skip it.
 
 **Before spawning any agents**, print this notice:
-> "Full review: spawning specialist agents in parallel. This typically takes 8–15 minutes. Use `--review lean` for faster single-session analysis."
+> "Full review: spawning specialist agents in parallel. This typically takes 8–15 minutes. Use `--depth lean` for faster single-session analysis."
 
 ### Step 1 — Identify all domains the GDD touches
 

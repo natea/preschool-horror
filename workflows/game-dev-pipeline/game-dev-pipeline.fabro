@@ -1,0 +1,242 @@
+// Claude Code Game Studios — Full Game Development Pipeline
+// Captures the 7-phase process from concept to ship
+// Based on skill-flow-diagrams.md and WORKFLOW-GUIDE.md
+
+digraph GameDevPipeline {
+    graph [
+        goal="Take a game from concept to shipped product through 7 structured phases with gate checks",
+        rankdir=TB,
+        model_stylesheet="
+            *         { model: claude-sonnet-4-6; }
+            .design   { model: claude-opus-4-6; reasoning_effort: high; }
+            .review   { model: claude-opus-4-6; reasoning_effort: high; }
+            .quick    { model: claude-haiku-4-5; reasoning_effort: low; }
+            .coding   { model: claude-sonnet-4-6; reasoning_effort: high; }
+            .ensemble { model: gemini-3.1-pro-preview; }
+        "
+    ]
+
+    start [shape=Mdiamond, label="Start"]
+    exit  [shape=Msquare, label="Ship"]
+
+    // ─── PHASE 1: CONCEPT ───────────────────────────────────────
+
+    brainstorm [
+        label="Phase 1: Brainstorm",
+        class="design",
+        prompt="@prompts/01-brainstorm.md"
+    ]
+
+    setup_engine [
+        label="Setup Engine",
+        class="quick",
+        prompt="Read the game concept at design/gdd/game-concept.md. Check if .claude/docs/technical-preferences.md has an engine configured. Report the engine name and version, or note if setup is needed. List any knowledge gaps between LLM training cutoff and the engine version."
+    ]
+
+    map_systems [
+        label="Map Systems",
+        class="design",
+        prompt="@prompts/02-map-systems.md"
+    ]
+
+    gate1 [shape=hexagon, label="Phase 1 Gate\nConcept Ready?"]
+
+    start -> brainstorm -> setup_engine -> map_systems -> gate1
+
+    // ─── PHASE 2: SYSTEMS DESIGN ────────────────────────────────
+
+    design_gdds [
+        label="Phase 2: Design GDDs",
+        class="design",
+        prompt="@prompts/03-design-gdds.md"
+    ]
+
+    cross_review [
+        label="Cross-GDD Review",
+        shape=component,
+        join_policy="wait_all",
+        error_policy="continue"
+    ]
+
+    consistency_check [
+        label="Consistency Check",
+        class="review",
+        prompt="Read design/registry/entities.yaml. For each registered entity, formula, and constant, grep all GDD files in design/gdd/ for the entry name. Compare values. Report any conflicts where the same named value appears with different numbers in different GDDs. Output a PASS/CONFLICTS verdict.",
+        shape=tab
+    ]
+
+    design_theory [
+        label="Design Theory Review",
+        class="ensemble",
+        prompt="Read all GDD files in design/gdd/. Evaluate the game design holistically: Do the systems create interesting player decisions? Is there a clear core loop? Does difficulty scale appropriately? Are there degenerate strategies? Report findings as a prioritized list.",
+        shape=tab
+    ]
+
+    merge_review [label="Merge Reviews", shape=tripleoctagon]
+
+    review_synthesis [
+        label="Review Synthesis",
+        class="review",
+        prompt="Synthesize the consistency check and design theory review into a single verdict: PASS (no blocking issues), CONCERNS (issues that should be addressed but don't block), or FAIL (blocking issues that must be resolved). List specific action items.",
+        shape=tab
+    ]
+
+    gate2 [shape=hexagon, label="Phase 2 Gate\nAll GDDs Reviewed?"]
+
+    gate1 -> design_gdds [label="[A] Proceed"]
+    gate1 -> brainstorm [label="[R] Revise concept"]
+    design_gdds -> cross_review
+    cross_review -> consistency_check
+    cross_review -> design_theory
+    consistency_check -> merge_review
+    design_theory -> merge_review
+    merge_review -> review_synthesis -> gate2
+
+    // ─── PHASE 3: TECHNICAL SETUP ───────────────────────────────
+
+    architecture [
+        label="Phase 3: Architecture",
+        class="design",
+        prompt="@prompts/04-architecture.md"
+    ]
+
+    arch_review [
+        label="Architecture Review",
+        class="review",
+        prompt="Read docs/architecture/architecture.md, all ADR files in docs/architecture/adr-*.md, and the control manifest at docs/architecture/control-manifest.md. Validate: (1) every GDD requirement has an ADR or is covered by the architecture, (2) no circular dependencies in the module graph, (3) performance budgets are specified, (4) engine-specific risks are flagged. Output PASS/CONCERNS/FAIL.",
+        shape=tab
+    ]
+
+    gate3 [shape=hexagon, label="Phase 3 Gate\nArchitecture Sound?"]
+
+    gate2 -> architecture [label="[A] Proceed"]
+    gate2 -> design_gdds [label="[R] Fix GDD issues"]
+    architecture -> arch_review -> gate3
+
+    // ─── PHASE 4: PRE-PRODUCTION ────────────────────────────────
+
+    pre_prod [
+        label="Phase 4: Pre-Production",
+        class="coding",
+        prompt="@prompts/05-pre-production.md"
+    ]
+
+    test_setup [
+        label="Test Setup",
+        prompt="Read .claude/docs/technical-preferences.md for the engine and test framework. Create the test directory structure, a minimal test runner configuration, and one example test that validates the framework works. Write a TESTING.md with instructions.",
+        class="coding"
+    ]
+
+    gate4 [shape=hexagon, label="Phase 4 Gate\nReady for Production?"]
+
+    gate3 -> pre_prod [label="[A] Proceed"]
+    gate3 -> architecture [label="[R] Fix architecture"]
+    pre_prod -> test_setup -> gate4
+
+    // ─── PHASE 5: PRODUCTION ────────────────────────────────────
+
+    sprint_loop [
+        label="Phase 5: Sprint Loop",
+        class="coding",
+        prompt="@prompts/06-production.md",
+        max_visits=10
+    ]
+
+    run_tests [
+        label="Run Tests",
+        shape=parallelogram,
+        script="cd $(git rev-parse --show-toplevel) && godot --headless --script tests/gdunit4_runner.gd 2>&1 || echo 'TESTS_FAILED'"
+    ]
+
+    test_gate [shape=diamond, label="Tests Pass?"]
+
+    qa_cycle [
+        label="QA Cycle",
+        class="review",
+        prompt="Review the current sprint's implemented stories. For each story, check: (1) acceptance criteria met, (2) test evidence exists, (3) no regressions introduced. Classify issues by severity. Output a sprint QA report with PASS/FAIL per story.",
+        shape=tab
+    ]
+
+    milestone_check [shape=hexagon, label="Milestone Complete?\nReady for Polish?"]
+
+    gate4 -> sprint_loop [label="[A] Start sprints"]
+    gate4 -> pre_prod [label="[R] More prep needed"]
+    sprint_loop -> run_tests -> test_gate
+    test_gate -> qa_cycle [label="Pass", condition="outcome=success"]
+    test_gate -> sprint_loop [label="Fix failures"]
+    qa_cycle -> milestone_check
+
+    // ─── PHASE 6: POLISH ────────────────────────────────────────
+
+    polish_fork [
+        label="Phase 6: Polish",
+        shape=component,
+        join_policy="wait_all",
+        error_policy="continue"
+    ]
+
+    perf_audit [
+        label="Performance Audit",
+        class="coding",
+        prompt="Profile the game for performance issues. Check: frame time budget (16.6ms target), draw call count (<500), memory usage (<512MB). Identify bottlenecks and propose fixes. Output a performance report with specific file:line references.",
+        shape=tab
+    ]
+
+    balance_audit [
+        label="Balance Audit",
+        class="design",
+        prompt="Read all GDD formula sections and tuning knob tables. Verify: (1) formula outputs are within stated ranges, (2) tuning knob defaults are within safe ranges, (3) difficulty curves produce distinct tiers, (4) no degenerate edge cases in the math. Output a balance report.",
+        shape=tab
+    ]
+
+    asset_audit [
+        label="Asset Audit",
+        class="quick",
+        prompt="Scan assets/ directory. Check: (1) naming conventions match technical-preferences.md, (2) audio files are OGG Vorbis and total <20MB, (3) no placeholder assets remain, (4) all GDD-specified assets exist. Output compliance report.",
+        shape=tab
+    ]
+
+    merge_polish [label="Merge Polish", shape=tripleoctagon]
+
+    polish_report [
+        label="Polish Report",
+        class="review",
+        prompt="Synthesize performance, balance, and asset audit findings. Prioritize: P0 (ship-blocking), P1 (should fix), P2 (nice to have). Output final polish verdict: READY / NEEDS WORK / BLOCKED.",
+        shape=tab
+    ]
+
+    gate6 [shape=hexagon, label="Phase 6 Gate\nPolish Complete?"]
+
+    milestone_check -> polish_fork [label="[A] Enter Polish"]
+    milestone_check -> sprint_loop [label="[R] More sprints"]
+    polish_fork -> perf_audit
+    polish_fork -> balance_audit
+    polish_fork -> asset_audit
+    perf_audit -> merge_polish
+    balance_audit -> merge_polish
+    asset_audit -> merge_polish
+    merge_polish -> polish_report -> gate6
+
+    // ─── PHASE 7: RELEASE ───────────────────────────────────────
+
+    release_prep [
+        label="Phase 7: Release",
+        class="coding",
+        prompt="@prompts/07-release.md"
+    ]
+
+    launch_check [
+        label="Launch Checklist",
+        class="review",
+        prompt="Final launch validation. Check every department: (1) all tests pass, (2) no P0 bugs open, (3) changelog written, (4) build exports clean for all target platforms (PC, Web), (5) store page ready, (6) patch notes written. Output SHIP / NOT READY with specific blockers.",
+        shape=tab
+    ]
+
+    ship_gate [shape=hexagon, label="Ship?"]
+
+    gate6 -> release_prep [label="[A] Prepare release"]
+    gate6 -> polish_fork [label="[R] More polish"]
+    release_prep -> launch_check -> ship_gate
+    ship_gate -> exit [label="[S] Ship it!"]
+    ship_gate -> release_prep [label="[R] Fix blockers"]
+}

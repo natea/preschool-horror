@@ -13,6 +13,7 @@ Desktop.ini
 .claude/settings.local.json
 CLAUDE.local.md
 production/session-logs/
+.mcp.local.json
 
 # === Internal Planning (not for public) ===
 
